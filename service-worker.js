@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rt-iqi-cache-v2';
+const CACHE_NAME = 'rt-iqi-cache-v6';
 const FILES_TO_CACHE = [
   './',
   './index.html',
@@ -18,5 +18,6 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
