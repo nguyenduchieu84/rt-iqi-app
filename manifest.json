@@ -1,8 +1,8 @@
 {
   "name": "RT IQI Checker",
   "short_name": "RT IQI",
-  "description": "RT IQI quick check theo EN ISO 17636-1",
-  "start_url": "./index.html",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f7fa",
   "theme_color": "#2563eb",
@@ -19,4 +19,6 @@
     }
   ]
 }
+
+
 
