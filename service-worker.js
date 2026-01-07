@@ -1,7 +1,7 @@
 const CACHE_NAME = 'rt-iqi-cache-v1';
 const FILES_TO_CACHE = [
   './',
-  './Tra cuu IQI theo ISO v1.0.html',
+  './index.html',
   './manifest.json'
 ];
 
@@ -18,3 +18,4 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
