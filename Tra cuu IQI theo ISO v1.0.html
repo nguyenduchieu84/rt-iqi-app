@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RT – Tra cứu IQI theo EN/ISO</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f5f7fa; margin:0; padding:12px; }
+    .container { max-width:460px; margin:auto; }
+    .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.12); }
+    h2 { margin:0 0 12px 0; font-size:18px; text-align:center; }
+    label { display:block; margin-top:10px; font-weight:600; font-size:14px; }
+    select, input {
+      width:100%;
+      padding:10px;
+      margin-top:4px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      font-size:14px;
+      box-sizing:border-box;
+      height:42px;
+    }
+
+    /* Chuẩn hoá chiều cao input number để không dài hơn các field khác */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    button { width:100%; margin-top:14px; padding:12px; font-size:15px; border:none; border-radius:10px; background:#2563eb; color:#fff; font-weight:600; }
+    .result { margin-top:14px; padding:12px; background:#eef3ff; border-radius:10px; font-size:14px; }
+    .note { font-size:12px; color:#555; margin-top:4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="card">
+    <h2>Tra cứu IQI theo tiêu chuẩn ISO</h2>
+
+    <label>Kỹ thuật chụp</label>
+    <select id="technique">
+      <option value="SWSI">Single-wall (SWSI)</option>
+      <option value="DWSI">Double-wall (DWSI)</option>
+      <option value="DWDI">Double-wall (DWDI)</option>
+    </select>
+
+    <label>Vị trí đặt IQI</label>
+    <select id="side">
+      <option value="source">Source side</option>
+      <option value="film">Film side</option>
+    </select>
+
+    <label>Testing class</label>
+    <select id="tclass">
+      <option value="A">Class A</option>
+      <option value="B">Class B</option>
+    </select>
+
+    <label>Vật liệu</label>
+    <select id="material">
+      <option value="FE" selected>Thép</option>
+      <option value="CU">Đồng</option>
+      <option value="AL">Nhôm</option>
+      <option value="TI">Titan</option>
+    </select>
+
+    <label>Chiều dày (mm)</label>
+    <input type="number" id="thickness" placeholder="Nhập chiều dày (mm)" />
+    <div class="note">Nhập chiều dày <b>một thành</b> nếu SW, <b>hai thành</b> nếu DW.</div>
+
+    <button onclick="lookupIQI()">TRA CỨU IQI</button>
+
+    <div class="result" id="resultIQI">Nhập thông tin và nhấn TRA CỨU</div>
+  </div>
+</div>
+
+<script>
+  /* ===== DATA TABLES (EN ISO 17636-1 Annex B) ===== */
+  const tables = {
+    'SWSI_source_A': [[0,1.2,'W18'],[1.2,2,'W17'],[2,3.5,'W16'],[3.5,5,'W15'],[5,7,'W14'],[7,10,'W13'],[10,15,'W12'],[15,25,'W11'],[25,32,'W10'],[32,40,'W9'],[40,55,'W8'],[55,85,'W7'],[85,150,'W6'],[150,250,'W5'],[250,9999,'W4']],
+    'SWSI_source_B': [[0,1.5,'W19'],[1.5,2.5,'W18'],[2.5,4,'W17'],[4,6,'W16'],[6,8,'W15'],[8,12,'W14'],[12,20,'W13'],[20,30,'W12'],[30,35,'W11'],[35,45,'W10'],[45,65,'W9'],[65,120,'W8'],[120,200,'W7'],[200,350,'W6'],[350,9999,'W5']],
+    'DWDI_source_A': [[0,1.2,'W18'],[1.2,2,'W17'],[2,3.5,'W16'],[3.5,5,'W15'],[5,7,'W14'],[7,12,'W13'],[12,18,'W12'],[18,30,'W11'],[30,40,'W10'],[40,50,'W9'],[50,60,'W8'],[60,85,'W7'],[85,120,'W6'],[120,220,'W5'],[220,380,'W4'],[380,9999,'W3']],
+    'DWDI_source_B': [[0,1.5,'W19'],[1.5,2.5,'W18'],[2.5,4,'W17'],[4,6,'W16'],[6,8,'W15'],[8,15,'W14'],[15,25,'W13'],[25,38,'W12'],[38,45,'W11'],[45,55,'W10'],[55,70,'W9'],[70,100,'W8'],[100,170,'W7'],[170,250,'W6'],[250,9999,'W5']],
+    'FILM_A': [[0,1.2,'W18'],[1.2,2,'W17'],[2,3.5,'W16'],[3.5,5,'W15'],[5,10,'W14'],[10,15,'W13'],[15,22,'W12'],[22,38,'W11'],[38,48,'W10'],[48,60,'W9'],[60,85,'W8'],[85,125,'W7'],[125,225,'W6'],[225,375,'W5'],[375,9999,'W4']],
+    'FILM_B': [[0,1.5,'W19'],[1.5,2.5,'W18'],[2.5,4,'W17'],[4,6,'W16'],[6,12,'W15'],[12,18,'W14'],[18,30,'W13'],[30,45,'W12'],[45,55,'W11'],[55,70,'W10'],[70,100,'W9'],[100,180,'W8'],[180,300,'W7'],[300,9999,'W6']]
+  };
+
+  /* ===== WIRE DATA (EN/ISO IQI SETS) ===== */
+  const wireData = {
+    W1:{d:3.20, sets:['10']}, W2:{d:2.50, sets:['10']}, W3:{d:2.00, sets:['10']},
+    W4:{d:1.60, sets:['10']}, W5:{d:1.25, sets:['10']}, W6:{d:1.00, sets:['10','6']},
+    W7:{d:0.80, sets:['6']},  W8:{d:0.63, sets:['6']},  W9:{d:0.50, sets:['6']},
+    W10:{d:0.40, sets:['6','10']}, W11:{d:0.32, sets:['6','10']}, W12:{d:0.25, sets:['6','10']},
+    W13:{d:0.20, sets:['10','13']}, W14:{d:0.16, sets:['10','13']},
+    W15:{d:0.125, sets:['13']}, W16:{d:0.100, sets:['13']},
+    W17:{d:0.080, sets:['13']}, W18:{d:0.063, sets:['13']}, W19:{d:0.050, sets:['13']}
+  };
+
+  const materialSuffix = {
+    FE: 'FE',
+    CU: 'CU',
+    AL: 'AL',
+    TI: 'TI'
+  };
+
+  function lookupIQI() {
+    const tech = document.getElementById('technique').value;
+    const sideVal = document.getElementById('side').value;
+    const cls = document.getElementById('tclass').value;
+    const t = parseFloat(document.getElementById('thickness').value);
+
+    if (tech === 'DWSI' && sideVal === 'source') {
+      document.getElementById('resultIQI').innerHTML = '<b>Vị trí đặt IQI không hợp lệ</b><br>DWSI chỉ cho phép Film side.';
+      return;
+    }
+
+    if (isNaN(t)) {
+      document.getElementById('resultIQI').innerHTML = 'Vui lòng nhập chiều dày hợp lệ.';
+      return;
+    }
+
+    const key = sideVal === 'film' ? 'FILM_' + cls : tech + '_source_' + cls;
+    let res = 'N/A';
+    for (const r of tables[key]) {
+      if (t > r[0] && t <= r[1]) { res = r[2]; break; }
+    }
+
+    const info = wireData[res];
+    const mat = document.getElementById('material').value;
+    const matSuffix = materialSuffix[mat] || '';
+
+    if (!info) {
+      document.getElementById('resultIQI').innerHTML = `<b>Kết quả</b><br>● Dây IQI nhỏ nhất cần nhìn thấy: <b>${res}</b>`;
+      return;
+    }
+
+    document.getElementById('resultIQI').innerHTML =
+      `<b>Kết quả</b><br>`+
+      `● Dây IQI nhỏ nhất cần nhìn thấy: <b>${res}</b><br>`+
+      `● Đường kính dây nhỏ nhất cần nhìn thấy: <b>${info.d} mm</b><br>`+
+      `● Bộ IQI cần sử dụng: <b>${info.sets.map(s => 'bộ ' + s + ' ' + matSuffix).join(' hoặc ')}</b>`;
+  }
+</script>
+</body>
+</html>
